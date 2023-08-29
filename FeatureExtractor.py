@@ -98,8 +98,8 @@ class FeatureExtractor:
 
         result = [tensor.detach().cpu().squeeze().numpy() for tensor in
                   feature_vectors]  # convert from torch.Tensor to numpy.ndarray
-        print("type of feature vector list: ", type(result[0]))
-        print("size of feature vector list: ", result[2].shape)
+        # print("type of feature vector list: ", type(result[0]))
+        # print("size of feature vector list: ", result[2].shape)
         return result
 
 
