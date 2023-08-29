@@ -38,9 +38,14 @@ class OSNet_x1_0(nn.Module):
 
 class FeatureExtractor:
     def __init__(self) -> None:
-        pass
-
         self.device = torch.device("cuda")
+        self.model = self.loadModel()
+
+    def loadModel(self):
+        osnet = OSNet_x1_0()
+        osnet.to(self.device)
+        osnet.eval()
+        return osnet
 
     # Using RoI Pooling to return a fixed size feature map size [512,7, 7] and Average Pooling to return feature map size [512, 1, 1]
     def roi(self, ft_map, bbox):
@@ -64,12 +69,6 @@ class FeatureExtractor:
         :return: list of feature vectors, corresponding to each bounding box
         Each feature vector is a np ndarray with shape = (512, )
         """
-
-        # Prepare model
-        osnet = OSNet_x1_0()
-        osnet.to(self.device)
-        osnet.eval()
-
         # Convert bgr numpy image to rgb tensor
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # frame BGR image -> RGB image
         pil_image = Image.fromarray(rgb_image)  # Create Image object from numpy.ndarray
@@ -79,7 +78,7 @@ class FeatureExtractor:
         img = ToTensor()(img_rsz)
         img = img.to(self.device)
         img = img.view(-1, img.size(0), img.size(1), img.size(2))
-        feature_map = osnet(img)
+        feature_map = self.model(img)
 
         # Scaling bounding boxes to feature map's size
         scale_x = pil_image.size[0] / feature_map.size(3)
