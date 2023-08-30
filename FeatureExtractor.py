@@ -53,7 +53,7 @@ class FeatureExtractor:
         out = roi_pooling(ft_map, bbox)
         avg_pooling = nn.AdaptiveAvgPool2d(output_size=(1, 1))
         pool_feature = avg_pooling(out)
-        app = pool_feature.view(1, -1)
+        app = pool_feature.view(pool_feature.size()[0], pool_feature.size()[1])
         return app
 
     def extract(self, frame: np.ndarray, boxes: list) -> list[np.ndarray]:
@@ -84,22 +84,14 @@ class FeatureExtractor:
         scale_x = pil_image.size[0] / feature_map.size(3)
         scale_y = pil_image.size[1] / feature_map.size(2)
 
-        feature_vectors = []
-        for box in boxes:
-            l, t, r, b = box
-            l_1 = l / scale_x
-            t_1 = t / scale_y
-            r_1 = r / scale_x
-            b_1 = b / scale_y
-            bbx = [[0, l_1, t_1, r_1, b_1]]  # convert
-            bbx = torch.tensor(bbx).to(self.device)
-            app = self.roi(feature_map, bbx)  # Apply pooling to get torch.Size([512, 1, 1])
-            feature_vectors.append(app)
-
+        e = 0.50001  # Prevent 0 width & height in feature map
+        bbx = [[0, min(l / scale_x, feature_map.size(3) - e), min(t / scale_y, feature_map.size(2) - e),
+                r / scale_x, b / scale_y] for l, t, r, b in boxes]
+        bbx = torch.tensor(bbx).to(self.device)
+        feature_vectors = self.roi(feature_map, bbx)
         result = [tensor.detach().cpu().squeeze().numpy() for tensor in
                   feature_vectors]  # convert from torch.Tensor to numpy.ndarray
-        # print("type of feature vector list: ", type(result[0]))
-        # print("size of feature vector list: ", result[2].shape)
+
         return result
 
 
